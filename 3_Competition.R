@@ -12,25 +12,11 @@ counts_final = read_csv("Counts.csv")
 
 # Read fitted coefficients
 
-all_coeffs_single = read_csv("Coefficients/SingleSpecies.csv")
+lambdas = read_csv("Coefficients/Lambdas.csv")
 all_coeffs = read_csv("Coefficients/TwoSpecies.csv")
 
 
 ########## Intrinsic Growth Rates (Figure S6) ##########
-
-
-lambda_plot = all_coeffs_single %>% 
-  
-  # calculate quantiles and median
-  group_by(Species, Num_Gen) %>% 
-  mutate(Q10 = quantile(lambda, 0.1), Q90 = quantile(lambda, 0.9), Median = median(lambda)) %>% 
-  
-  # only include 10% and 90% quantiles
-  filter(lambda >= Q10 & lambda <= Q90) %>% 
-  
-  # only include quantiles and median
-  select(Num_Gen, Species, lambda, Q10, Q90, Median) %>% 
-  distinct(Q10, Q90, Median)
 
 p_lambda = lambda_plot %>% 
   # plotting
@@ -55,28 +41,6 @@ p_lambda
 
 
 # Competition coefficients and relative arrival times (Figure 3)
-
-coeffs_plot = 
-  all_coeffs %>% 
-  pivot_longer(starts_with("alpha"), names_to = "Coeff", values_to = "Value") %>% 
-  
-  # calculate quantiles and median
-  group_by(Coeff, Num_Gen, Relative_Arriv_Time) %>% 
-  mutate(Q10 = quantile(Value, 0.1), Q90 = quantile(Value, 0.9), Median = median(Value)) %>% 
-  
-  # only include 10% and 90% quantiles
-  filter(Value >= Q10 & Value <= Q90) %>% 
-  
-  # filter coefficients
-  filter(grepl("12|21", Coeff)) %>%
-  # filter(grepl("11|22", Coeff)) %>% 
-  
-  # filter by numbers of generations
-  # filter(Num_Gen == 2) %>%
-  
-  # only include quantiles and median
-  select(Num_Gen, Relative_Arriv_Time, Coeff, Q10, Q90, Median) %>% 
-  distinct(Q10, Q90, Median)
 
 p_coeff = coeffs_plot %>% 
   # filter(!(Num_Gen == 1 & Relative_Arriv_Time == -18)) %>% 

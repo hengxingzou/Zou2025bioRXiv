@@ -6,7 +6,8 @@ library(bayesplot)
 counts_final = read_csv("Counts.csv")
 
 # Caution: This script fit multiple Bayesian models with rstan and could take hours
-# We provide coefficients extracted from the models for faster reproduction of results
+# We provide coefficients extracted from the models for faster reproduction of results at:
+# 
 
 
 ########## Prepare for Model Fitting ##########
@@ -535,8 +536,6 @@ all_coeffs_single = rbind(coeff_onegen_Tonly, coeff_onegen_Fonly,
                           coeff_twogen_Tonly, coeff_twogen_Fonly, 
                           coeff_threegen_Tonly, coeff_threegen_Fonly)
 
-write_csv(all_coeffs_single, "Coefficients/SingleSpecies.csv")
-
 # Two-species vials
 
 coeff_onegen_0 = as.data.frame(m_onegen_0) %>% 
@@ -619,4 +618,44 @@ all_coeffs = rbind(coeff_onegen_0, coeff_onegen_T6, coeff_onegen_T12, coeff_oneg
          alpha21 = `alphas[2,1]`, alpha22 = `alphas[2,2]`, 
          lambda1 = `lambdas[1]`, lambda2 = `lambdas[2]`)
 
-write_csv(all_coeffs, "Coefficients/TwoSpecies.csv")
+
+########## Extract Key Values from Fitted Coefficients ##########
+
+
+# Since the fitted coefficients are too large, we provide extracted values for plotting
+
+lambda_plot = all_coeffs_single %>% 
+  
+  # calculate quantiles and median
+  group_by(Species, Num_Gen) %>% 
+  mutate(Q10 = quantile(lambda, 0.1), Q90 = quantile(lambda, 0.9), Median = median(lambda)) %>% 
+  
+  # only include 10% and 90% quantiles
+  filter(lambda >= Q10 & lambda <= Q90) %>% 
+  
+  # only include quantiles and median
+  select(Num_Gen, Species, lambda, Q10, Q90, Median) %>% 
+  distinct(Q10, Q90, Median)
+
+write_csv(lambda_plot, "Coefficients/Lambdas.csv")
+
+coeffs_plot = 
+  all_coeffs %>% 
+  pivot_longer(starts_with("alpha"), names_to = "Coeff", values_to = "Value") %>% 
+  
+  # calculate quantiles and median
+  group_by(Coeff, Num_Gen, Relative_Arriv_Time) %>% 
+  mutate(Q10 = quantile(Value, 0.1), Q90 = quantile(Value, 0.9), Median = median(Value)) %>% 
+  
+  # only include 10% and 90% quantiles
+  filter(Value >= Q10 & Value <= Q90) %>% 
+  
+  # filter for interspecific coefficients
+  filter(grepl("12|21", Coeff)) %>%
+
+  # only include quantiles and median
+  select(Num_Gen, Relative_Arriv_Time, Coeff, Q10, Q90, Median) %>% 
+  distinct(Q10, Q90, Median)
+
+write_csv(lambda_plot, "Coefficients/CompCoefficients.csv")
+
