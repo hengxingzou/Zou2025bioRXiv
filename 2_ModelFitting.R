@@ -6,8 +6,7 @@ library(bayesplot)
 counts_final = read_csv("Counts.csv")
 
 # Caution: This script fit multiple Bayesian models with rstan and could take hours
-# We provide coefficients extracted from the models for faster reproduction of results at:
-# 
+# We provide coefficients extracted from the models for faster reproduction of results
 
 
 ########## Prepare for Model Fitting ##########

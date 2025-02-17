@@ -13,7 +13,7 @@ counts_final = read_csv("Counts.csv")
 # Read fitted coefficients
 
 lambdas = read_csv("Coefficients/Lambdas.csv")
-all_coeffs = read_csv("Coefficients/TwoSpecies.csv")
+all_coeffs = read_csv("Coefficients/CompCoefficients.csv")
 
 
 ########## Intrinsic Growth Rates (Figure S6) ##########
