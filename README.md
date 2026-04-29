@@ -1,4 +1,4 @@
-This repository contains code and data for: Zou, H.-X., and V.H.W. Rudolf. Consequences of phenological shifts are determined by the number of generations per season. Accepted at _Ecology_
+This repository contains code and data for: Zou, H.-X., and V.H.W. Rudolf. Consequences of phenological shifts are determined by the number of generations per season. Accepted at _Ecology_.
 
 # Code
 
