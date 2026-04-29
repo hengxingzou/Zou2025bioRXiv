@@ -656,5 +656,5 @@ coeffs_plot =
   select(Num_Gen, Relative_Arriv_Time, Coeff, Q10, Q90, Median) %>% 
   distinct(Q10, Q90, Median)
 
-write_csv(lambda_plot, "Coefficients/CompCoefficients.csv")
+write_csv(coeffs_plot, "Coefficients/CompCoefficients.csv")
 

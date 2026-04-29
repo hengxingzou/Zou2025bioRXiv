@@ -12,6 +12,12 @@ color_scheme = c("#a61b29", "#0eb0c9")
 
 counts_final = read_csv("Counts.csv")
 
+# Get two-species vial data only
+
+counts_final_twospp = counts_final %>% 
+  filter(Start_T != 0 & Start_F != 0) %>% 
+  mutate(Ratio = Start_T/Start_F, Total = Start_T + Start_F)
+
 
 ########### Final Population ##########
 
@@ -25,7 +31,7 @@ p_final_T = counts_final_twospp %>%
   geom_tile() + 
   ggtitle("A") + 
   scale_x_discrete(name = "Relative Arrival Time") + 
-  scale_y_discrete(name = "Initial T: Initial F", labels = c("2:1", "1:1", "1:2")) + 
+  scale_y_discrete(name = "Initial T: Initial F", labels = c("1:2", "1:1", "2:1")) +
   scale_fill_gradient2(low = "#91dbe6", high = "#0eb0c9",
                        name = "Final Density of T. castaneum", 
                        n.breaks = 4) + 
@@ -47,7 +53,7 @@ p_final_F = counts_final_twospp %>%
   geom_tile() + 
   ggtitle("B") +
   scale_x_discrete(name = "Relative Arrival Time") + 
-  scale_y_discrete(name = "Initial T: Initial F", labels = c("2:1", "1:1", "1:2")) + 
+  scale_y_discrete(name = "Initial T: Initial F", labels = c("1:2", "1:1", "2:1")) +
   scale_fill_gradient2(low = "#d6979d", high = "#a61b29",
                        name = "Final Density of T. confusum") + 
   facet_grid(Num_Gen ~ Total, 
@@ -137,21 +143,118 @@ p_pop_threegen
 
 # T only
 
-m_all_T = lmerTest::lmer(Adults_T ~ Num_Gen + Relative_Arriv_Time + as.factor(Ratio) + (1|Replication),
+m_all_T = lmerTest::lmer(Adults_T ~ Num_Gen + Relative_Arriv_Time + as.factor(Ratio) + 
+                           # Num_Gen:Relative_Arriv_Time + Num_Gen:as.factor(Ratio) + Relative_Arriv_Time:as.factor(Ratio) + 
+                           (1|Replication),
                          data = counts_final_twospp)
 
 lmerTest::step(m_all_T, reduce_random = F)
 
 summary(m_all_T)
+confint(m_all_T)
 
 # F only
 
-m_all_F = lmerTest::lmer(Adults_F ~ Num_Gen + Relative_Arriv_Time + as.factor(Ratio) + (1|Replication),
+m_all_F = lmerTest::lmer(Adults_F ~ Num_Gen + Relative_Arriv_Time + as.factor(Ratio) + 
+                           # Num_Gen:Relative_Arriv_Time + Num_Gen:as.factor(Ratio) + Relative_Arriv_Time:as.factor(Ratio) +
+                           (1|Replication),
                          data = counts_final_twospp)
 
 lmerTest::step(m_all_F, reduce_random = F)
 
 summary(m_all_F)
+confint(m_all_F)
+
+# Summary stats for final population, linear models
+
+m_all_T_lm = lm(Adults_T ~ Num_Gen + Relative_Arriv_Time + as.factor(Ratio) +
+              Num_Gen:Relative_Arriv_Time + Num_Gen:as.factor(Ratio) + Relative_Arriv_Time:as.factor(Ratio),
+            data = counts_final_twospp)
+
+summary(m_all_T_lm)
+confint(m_all_T_lm)
+
+coeffs_T_lm = broom::tidy(m_all_T_lm) %>% 
+  mutate(Species = "T") %>% 
+  bind_cols(confint(m_all_T_lm)[, 1:2])
+
+m_all_F_lm = lm(Adults_F ~ Num_Gen + Relative_Arriv_Time + as.factor(Ratio) +
+              Num_Gen:Relative_Arriv_Time + Num_Gen:as.factor(Ratio) + Relative_Arriv_Time:as.factor(Ratio),
+            data = counts_final_twospp)
+
+summary(m_all_F_lm)
+confint(m_all_F_lm)
+
+coeffs_F_lm = broom::tidy(m_all_F_lm) %>% 
+  mutate(Species = "F") %>% 
+  bind_cols(confint(m_all_F_lm)[, 1:2])
+
+# Visualization of the linear models
+
+rbind(coeffs_T_lm, coeffs_F_lm) %>% 
+  mutate(signif = if_else(p.value < 0.05, T, F)) %>% 
+  ggplot(aes(y = term, x = estimate, color = Species, alpha = signif)) + 
+  geom_pointrange(aes(xmin = `2.5 %`, xmax = `97.5 %`)) + 
+  geom_vline(xintercept = 0) + 
+  scale_color_manual(values = color_scheme) +
+  scale_alpha_manual(values = c(0.2, 1), name = "Significance") + 
+  ggh4x::facet_wrap2(.~ Species) + 
+  theme(panel.grid.minor = element_blank(), 
+        axis.text = element_text(size = 15), axis.title = element_text(size = 20), 
+        legend.text = element_text(size = 17), legend.title = element_text(size = 20), 
+        strip.text = element_text(size = 15))
+
+# Summary stats for final population, linear model, separately for generation lengths
+
+m_onegen_T_lm = lm(Adults_T ~ Relative_Arriv_Time + as.factor(Ratio), 
+                data = counts_final_twospp %>% filter(Num_Gen == 1))
+
+summary(m_onegen_T_lm)
+confint(m_onegen_T_lm)
+
+m_twogen_T_lm = lm(Adults_T ~ Relative_Arriv_Time + as.factor(Ratio), 
+                   data = counts_final_twospp %>% filter(Num_Gen == 2))
+
+summary(m_twogen_T_lm)
+confint(m_twogen_T_lm)
+
+m_threegen_T_lm = lm(Adults_T ~ Relative_Arriv_Time + as.factor(Ratio), 
+                   data = counts_final_twospp %>% filter(Num_Gen == 3))
+
+summary(m_threegen_T_lm)
+confint(m_threegen_T_lm)
+
+m_onegen_F_lm = lm(Adults_F ~ Relative_Arriv_Time + as.factor(Ratio), 
+                   data = counts_final_twospp %>% filter(Num_Gen == 1))
+
+summary(m_onegen_F_lm)
+confint(m_onegen_F_lm)
+
+m_twogen_F_lm = lm(Adults_F ~ Relative_Arriv_Time + as.factor(Ratio), 
+                   data = counts_final_twospp %>% filter(Num_Gen == 2))
+
+summary(m_twogen_F_lm)
+confint(m_twogen_F_lm)
+
+m_threegen_F_lm = lm(Adults_F ~ Relative_Arriv_Time + as.factor(Ratio), 
+                     data = counts_final_twospp %>% filter(Num_Gen == 3))
+
+summary(m_threegen_F_lm)
+confint(m_threegen_F_lm)
+
+# Summary stats for final population, ANOVA
+
+m_all_T_aov = aov(Adults_T ~ Num_Gen + Relative_Arriv_Time + as.factor(Ratio) +
+                Num_Gen:Relative_Arriv_Time + Num_Gen:as.factor(Ratio) + Relative_Arriv_Time:as.factor(Ratio),
+                data = counts_final_twospp)
+
+summary(m_all_T_aov)
+
+m_all_F_aov = aov(Adults_F ~ Num_Gen + Relative_Arriv_Time + as.factor(Ratio) +
+                Num_Gen:Relative_Arriv_Time + Num_Gen:as.factor(Ratio) + Relative_Arriv_Time:as.factor(Ratio),
+                data = counts_final_twospp)
+
+summary(m_all_F_aov)
 
 
 ########## Additional Assays ##########
@@ -179,7 +282,7 @@ p_eggpre
 
 # Fecundity (Table S4)
 
-fecundity = read_excel("../Data/AdditionalAssays.xlsx", sheet = "Fecundity") %>% 
+fecundity = read_excel("AdditionalAssays.xlsx", sheet = "Fecundity") %>% 
   filter(!is.na(Day_1))
 
 # Mean and SE of T
